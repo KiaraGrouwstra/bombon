@@ -1,4 +1,8 @@
+use std::path::Path;
+
 use serde::Deserialize;
+
+use crate::gem;
 
 #[derive(Deserialize, Clone, Debug, Default)]
 #[serde(rename_all = "camelCase")]
@@ -46,9 +50,24 @@ impl Derivation {
             ..Self::default()
         }
     }
+
+    /// Add the licenses from the gemspec of a Ruby gem if the derivation has no license.
+    ///
+    /// This reads the store path of the derivation, so it only finds licenses for store paths
+    /// that are available, like the runtime dependencies.
+    #[must_use]
+    pub fn with_gem_licenses(mut self) -> Self {
+        if self.meta.as_ref().is_none_or(|meta| meta.license.is_none())
+            && let Some(licenses) = gem::licenses(Path::new(&self.path))
+        {
+            self.meta.get_or_insert_default().license =
+                Some(LicenseField::LicenseList(LicenseList(licenses)));
+        }
+        self
+    }
 }
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Deserialize, Clone, Debug, Default)]
 pub struct Meta {
     pub license: Option<LicenseField>,
     pub homepage: Option<String>,

@@ -19,6 +19,10 @@
 - Added support for compound licenses from Nixpkgs. Compound licenses are now
   included as SPDX expressions in the SBOM.
 - Added support for CycloneDX v1.7.
+- Added the licenses of Ruby gems from their gemspecs. Gems built from a
+  `gemset.nix`, like the gems of `bundlerEnv`, have no `meta.license`. For a
+  runtime dependency without a license, bombon now reads the licenses from the
+  gemspec that RubyGems installs in the store path of the gem.
 
 ### Fixed
 

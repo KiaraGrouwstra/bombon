@@ -36,12 +36,16 @@ pub fn transform(
     // Augment the runtime input with information from the buildtime input. The buildtime input,
     // however, is not a strict superset of the runtime input. This has to do with how we query the
     // buildinputs from Nix and how dependencies can "hide" in String Contexts.
+    //
+    // The runtime dependencies are available in the store, so the licenses of Ruby gems can be
+    // read from their gemspecs.
     let runtime_derivations = runtime_input.paths.iter().map(|store_path| {
         buildtime_input
             .0
             .get(store_path)
             .map(ToOwned::to_owned)
             .unwrap_or(Derivation::from_store_path(store_path))
+            .with_gem_licenses()
     });
 
     let buildtime_derivations = buildtime_input

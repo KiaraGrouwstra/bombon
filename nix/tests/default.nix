@@ -180,5 +180,16 @@ let
 
   genAttrsFromDrvs =
     drvs: f: builtins.listToAttrs (map (d: pkgs.lib.nameValuePair d.name (f d.drv d.options)) drvs);
+
+  rubyEnv = pkgs.ruby.withPackages (ps: [ ps.rake ]);
 in
 genAttrsFromDrvs testDerivations buildBomAndValidate
+// {
+  # The gems of `ruby.withPackages` and `bundlerEnv` have no `meta.license`.
+  # The SBOM must have the licenses from their gemspecs.
+  ruby-gem-licenses = pkgs.runCommand "ruby-gem-licenses" { nativeBuildInputs = [ pkgs.jq ]; } ''
+    jq -e '[.components[] | select(.name == "rake") | .licenses] == [[{ license: { id: "MIT" } }]]' \
+      "${buildBomAndValidate rubyEnv { }}"
+    touch $out
+  '';
+}
