@@ -15,8 +15,9 @@ The licenses are in the license files in the root directory of each module.
 Go modules declare no license, thus `identify_license` (`licenseclassifier`)
 identifies the licenses from the text, also from a license notice
 (`-headers`), such as the notice of `Apache-2.0`. A module with more than one
-license gets them all with `AND`, the strict choice. A module without a
-license file, or with a license that `identify_license` does not know, gets
+license gets them all with `AND`, the strict choice. In this expression, a
+license that is not on the SPDX list is `LicenseRef-<name>`. A module without
+a license file, or with a license that `identify_license` does not know, gets
 no license.
 
 The script changes each <sbom> in place.
@@ -115,10 +116,19 @@ def identify(modules, found):
     return licenses
 
 
+def spdx_id(name, spdx_ids):
+    """The identifier of a license in an SPDX expression."""
+    if name in spdx_ids:
+        return name
+    # A `LicenseRef-` allows only letters, digits, `.` and `-`.
+    return "LicenseRef-" + re.sub(r"[^A-Za-z0-9.-]", "-", name)
+
+
 def cyclonedx(names, spdx_ids):
     """The CycloneDX `licenses` of a set of license names."""
     if len(names) > 1:
-        return [{"expression": " AND ".join(sorted(names))}]
+        ids = sorted(spdx_id(name, spdx_ids) for name in names)
+        return [{"expression": " AND ".join(ids)}]
     (name,) = names
     return [{"license": {"id" if name in spdx_ids else "name": name}}]
 

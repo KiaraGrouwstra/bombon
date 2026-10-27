@@ -235,4 +235,38 @@ boms
 
     touch $out
   '';
+
+  # A license that is not on the SPDX list is a named license, or in an SPDX
+  # expression a `LicenseRef-` with only the characters that SPDX allows.
+  go-licenses-licenseref =
+    pkgs.runCommand "go-licenses-licenseref"
+      {
+        nativeBuildInputs = [
+          pkgs.jq
+          pkgs.licenseclassifier
+          pkgs.python3
+        ];
+      }
+      ''
+        assets=${pkgs.licenseclassifier.src}/v2/assets/License
+        mkdir -p vendor/example.com/{one,two}
+        cat > vendor/modules.txt <<EOF
+        # example.com/one v1.0.0
+        ## explicit
+        # example.com/two v1.0.0
+        ## explicit
+        EOF
+        cp $assets/Commons-Clause/license.txt vendor/example.com/one/LICENSE
+        cp $assets/Khronos_OpenCL/pristine.txt vendor/example.com/two/LICENSE
+        cp $assets/MIT/pristine.txt vendor/example.com/two/COPYING
+        echo '{"components":[{"name":"example.com/one","version":"v1.0.0"},{"name":"example.com/two","version":"v1.0.0"}]}' > sbom.json
+
+        python3 ${../go-licenses.py} \
+          ${pkgs.spdx-license-list-data.json}/json/licenses.json vendor sbom.json
+
+        [[ $(jq -c '.components[0].licenses' sbom.json) == '[{"license":{"name":"Commons-Clause"}}]' ]]
+        [[ $(jq -c '.components[1].licenses' sbom.json) == '[{"expression":"LicenseRef-Khronos-OpenCL AND MIT"}]' ]]
+
+        touch $out
+      '';
 }

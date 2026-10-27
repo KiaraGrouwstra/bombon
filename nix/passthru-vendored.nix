@@ -226,6 +226,10 @@
         passthru = (previousAttrs.passthru or { }) // {
           bombonVendoredSbom = finalAttrs.finalPackage.overrideAttrs (previousAttrs: {
             pname = previousAttrs.pname + "-bombon-vendored-sbom";
+            # `buildGoModule` names `goModules` after the `pname`, so the
+            # renamed `pname` would otherwise produce a new fixed-output
+            # derivation that fetches all modules again.
+            inherit (finalAttrs.finalPackage) goModules;
             nativeBuildInputs = (previousAttrs.nativeBuildInputs or [ ]) ++ [
               pkgs.buildPackages.cyclonedx-gomod
               pkgs.buildPackages.licenseclassifier
